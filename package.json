@@ -1,0 +1,20 @@
+{
+  "name": "LIRSMDatabase",
+  "description": "First Express app",
+  "version": "0.0.1",
+  "dependencies": {
+    "express": "4.x",
+    "hbs": "*",
+    "multer": "*",
+    "fast-csv": "*",
+    "mongodb": "*",
+    "monk": "*",
+    "babyparse":"*",
+    "nodemon": "*",
+    "string.prototype.startswith":"*"
+  },
+  "devDependencies": {
+    "grunt": "^0.4.5",
+    "grunt-nodemon": "^0.3.0"
+  }
+}
