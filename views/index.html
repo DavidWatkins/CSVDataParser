@@ -1,148 +1,237 @@
-<?php
-$table = "participants";
-?>
-<!DOCTYPE html>
-<html lang="en">
+doctype html(lang='en')
+head
+	meta(charset='utf-8')
+	meta(http-equiv='X-UA-Compatible' content='IE=edge')
+	meta(name='viewport' content='width=device-width, initial-scale=1')
+	meta(name='description' content='')
+	meta(name='author' content='David Watkins')
+	title
+		| LIRSM NLP Affirmations Data
+	link(href='http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css' rel='stylesheet')
+	link(href='http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css' rel='stylesheet')
+body
 
-    <head>
+	nav.navbar.navbar-default(role='navigation')
+		.container-fluid
+			// Brand and toggle get grouped for better mobile display
+			.navbar-header
+				button.navbar-toggle.collapsed(type='button', data-toggle='collapse', data-target='#bs-example-navbar-collapse-1')
+					span.sr-only Toggle navigation
+					|                         
+					span.icon-bar
+					|                         
+					span.icon-bar
+					|                         
+					span.icon-bar
+					|                     
+				a.navbar-brand(href='#') LIRSM
+			// Collect the nav links, forms, and other content for toggling
+			#bs-example-navbar-collapse-1.collapse.navbar-collapse
+				ul.nav.navbar-nav
+					li.active
+						a(href='/') LIRSM Data
+					|                         
+					li
+						a(href='/uploadcsv') Update Database
+			// /.navbar-collapse
+		// /.container-fluid
+		|                
+	.container-fluid
+		.row
+			.col-md-12
+				.btn-group
+					.btn-group
+						button#dropdownMenu1.btn.btn-default.dropdown-toggle(type='button', data-toggle='dropdown')
+							| Studies
+							span.caret                          
+						ul#studyDropDown.dropdown-menu(role='menu', aria-labelledby='dropdownMenu1')
+							each groups, study in Studies
+								li(role='presentation')
+									a(role='menuitem', tabindex='-1', href='javascript:populateGroups("#{encodeURI(study)}");') #{study}
+					.btn-group
+						button#dropdownMenu1.btn.btn-default.dropdown-toggle(type='button', data-toggle='dropdown')
+							| Groups
+							span.caret                          
+						ul#groupDropDown.dropdown-menu(role='menu', aria-labelledby='dropdownMenu1')
+							
+					|                           
+					button.btn.btn-default(type='submit' action='submit' onclick='javascript:populateTable();') Change View
+					|                         
+					button.btn.btn-default(type='submit' onclick="javascript:exportCSV();") Download View as CSV
+					|  
+		|        
+		br   
+		.row
+			.col-md-12
+				.panel.panel-default(style="overflow: scroll; height: 800px;")
+					// Default panel contents
+					#table_header.panel-heading LIRSM Data
+					// Table
+					table.table
+						table#display.table
+							thead#tableHeader                             
+							tbody#tableBody         
+	footer
+		.container
+			.row
+				.col-md-12
+					p.copyright.text-muted.small Created by David Watkins - 2014
+	// jQuery Version 1.11.0
+	script(src='//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js')
+	// Bootstrap Core JavaScript
+	script(src='//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js')
 
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="description" content="">
-        <meta name="author" content="David Watkins">
+	script(type='text/javascript').
+		var currentStudy;
+		var currentGroup;
+		var currentTable;
+		var currentHeaders;
 
-        <title>LIRSM NLP Affirmations Data</title>
+		function populateGroups(study) {
+			currentStudy = study;
 
-        <!-- Bootstrap Core CSS -->
-        <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+			var newGroupString = "";// = "<li role='presentation'><a role='menuitem', tabindex='-1', href='javascript:selectGroup(\"All\");'>All</a></li>";
+			var studyIterator = !{(JSON.stringify(Studies).toString())};
 
-        <!-- Font-Awesome -->
-        <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+			for(var group in studyIterator[study]) {
+				if(studyIterator[study][group] != "")
+					newGroupString += "<li role='presentation'><a role='menuitem', tabindex='-1', href='javascript:selectGroup(\"" + studyIterator[study][group] + "\");'>" + studyIterator[study][group] + "</a></li>"
+			}
 
-        <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-        <!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
-<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
-<![endif]-->
+			if(newGroupString == "")
+				currentGroup = "All";
+			else
+				currentGroup = null;
 
+			$('#groupDropDown').html(newGroupString);
+		}
 
-    </head>
+		function selectGroup(group) {
+			currentGroup = group;
+		}
 
-    <body>
+		function populateTable() {
+			if(currentGroup == null || currentStudy == null || currentStudy == "")
+				$('#table_header').html('LIRSM Data');
+			else {	
+				$('#table_header').html('Showing: ' + currentStudy + ":" + currentGroup);
 
-        <nav class="navbar navbar-default" role="navigation">
-            <div class="container-fluid">
-                <!-- Brand and toggle get grouped for better mobile display -->
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-                        <span class="sr-only">Toggle navigation</span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                    </button>
-                    <a class="navbar-brand" href="#">LIRSM</a>
-                </div>
+				var postData = {};
+				postData.study = currentStudy;
+				postData.group = currentGroup;
+				//postData = JSON.stringify(postData);
+				 $.ajax({
+				 	type: 'POST',
+		            url: '/ajax/table',
+		            dataType: 'json',
+		            data: postData,
+		            success: function(data) {
+		            	console.log(data.length);
+		                recordData(data);
+		            },
+		            error: function(jqXHR, textStatus, errorThrown) {
+		                alert(errorThrown);
+		            }
+		        });
+			}
+		}
 
-                <!-- Collect the nav links, forms, and other content for toggling -->
-                <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a href="/">LIRSM Data</a></li>
-                        <li><a href="/uploadcsv">Update Database</a></li>
-                    </ul>
-                </div><!-- /.navbar-collapse -->
-            </div><!-- /.container-fluid -->
-        </nav>
+		function recordData(data) {
+			var headers = ["ID", "Study", "Group", "Ethnicity", "Gender", "Condition"];
+			var table = [];
+			var raw = JSON.parse(JSON.stringify(data));
+			console.log(raw.length);
 
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-md-12">
+			var index = 0;
+			var first = raw[0];
+			console.log(first);
+			for(var k in first["File_path"]) {
+				headers.push("File Path " + (parseInt(k) + 1));
+			}
+			for(var k in first["Mark"]) {
+				headers.push("Mark " + (parseInt(k) + 1));
+			}
 
-                    <div class="btn-group">
-                        <div class="btn-group">
-                            <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown">
-                                Data Type
-                                <span class="caret"></span>
-                            </button>
-                            <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-                                <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Participants</a></li>
-                                <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Study 1</a></li>
-                                <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Study 2</a></li>
-                                <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Study 3</a></li>
-                                <li role="presentation"><a role="menuitem" tabindex="-1" href="#">Study 4</a></li>
-                            </ul>
-                        </div>
-                        <form class="btn-group" role="search">
-                            <div class="form-group">
-                                <input type="text" class="form-control" placeholder="Search">
-                            </div>
-                        </form>
-                        <button type="submit" class="btn btn-default">Submit</button>
-                        <button type="submit" class="btn btn-default">Download View as CSV</button>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="panel panel-default">
-                        <!-- Default panel contents -->
-                        <div class="panel-heading" id="table_header">Panel heading</div>
+			for(var k in first["Essays"]) {
+				headers.push(first["Essays"][k]["Question"] + " (" + first["Essays"][k]["Intervention"] + ")");
+			}
 
-                        <!-- Table -->
-                        <table class="table">
-                            <table class="table">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>First Name</th>
-                                        <th>Last Name</th>
-                                        <th>Username</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>1</td>
-                                        <td>Mark</td>
-                                        <td>Otto</td>
-                                        <td>@mdo</td>
-                                    </tr>
-                                    <tr>
-                                        <td>2</td>
-                                        <td>Jacob</td>
-                                        <td>Thornton</td>
-                                        <td>@fat</td>
-                                    </tr>
-                                    <tr>
-                                        <td>3</td>
-                                        <td>Larry</td>
-                                        <td>the Bird</td>
-                                        <td>@twitter</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </table>
-                    </div>
-                </div>
-            </div>
+			index = 0;
+			for(var subject in data) {
+				table[index] = [];
+				table[index].push(data[subject]["ID"]);
+				table[index].push(data[subject]["Study"]);
+				table[index].push(data[subject]["Group"]);
+				table[index].push(data[subject]["Ethnicity"]);
+				table[index].push(data[subject]["Gender"]);
+				table[index].push(data[subject]["Condition"]);
 
-            <footer>
-                <div class="container">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <p class="copyright text-muted small">Created by David Watkins - 2014</p>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+				for(var k in data[subject]["File_path"]) {
+					if(data[subject]["File_path"] != null)
+						table[index].push(data[subject]["File_path"][k]);
+					else
+						table[index].push("");
+				}
 
+				for(var k in data[subject]["Mark"]) {
+					if(data[subject]["Mark"] != null)
+						table[index].push(data[subject]["Mark"][k]);
+					else
+						table[index].push("");
+				}
 
-            <!-- jQuery Version 1.11.0 -->
-            <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js" ></script>
+				for(var k in data[subject]["Essays"]) {
+					table[index].push(data[subject]["Essays"][k]["Body"]);
+				}
 
-            <!-- Bootstrap Core JavaScript -->
-            <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+				index++;
+			}
 
-            </body>
+			currentHeaders = headers;
+			currentTable = table;
 
-        </html>
+			var headString = "<tr>";
+			for(var head in headers)
+				headString += "<td>" + headers[head] + "</td>";
+			$('#tableHeader').html(headString + "</tr>");
+
+			var tableString = "";
+			for(var subject in table) {
+				tableString += "<tr>";
+				for(var detail in table[subject]) {
+					tableString += "<td>" + table[subject][detail] + "</td>";
+				}
+				tableString += "</tr>";
+			}
+			$('#tableBody').html(tableString);
+		}
+
+		function exportCSV() {
+			var csvContent = "data:text/csv;charset=utf-8,";
+			currentHeaders.forEach(function(header, index) {
+
+				if(index < currentHeaders.length - 1)
+						csvContent += header + ",";
+				else
+					csvContent += header;
+			});
+			csvContent += "\n";
+
+			currentTable.forEach(function(subject, index){
+
+				subject.forEach(function(detail, index) {
+					if(index < subject.length - 1)
+						csvContent += detail + ",";
+					else
+						csvContent += detail;
+
+				});	
+				csvContent += "\n";
+			}); 
+
+			var encodedUri = encodeURI(csvContent);
+			var link = document.createElement("a");
+			link.setAttribute("href", encodedUri);
+			link.setAttribute("download", currentStudy + "-" + currentGroup + "-view.csv");
+			link.click();
+		}
