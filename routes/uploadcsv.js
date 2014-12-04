@@ -109,9 +109,6 @@ var insert = function(data, headers, collection, res, groupstudy) {
 					if(object.File_path == null) 
 						object.File_path = [];
 
-					if(object.Study == "Group Affirmation")
-						console.log(position + " " + headers[i].type + " " + data[headers[i].index] + " " + object.ID);
-
 					object.File_path.push(data[headers[i].index]);
 				} else if(headers[i].type === "Mark") {
 					if(object.Mark == null) 
