@@ -1,3 +1,4 @@
 #!/bin/bash
-nohup sudo pm2 start app.js -i max > my.log 2>&1&
+rm -f save_pid.txt
+nohup nodejs start app.js &
 echo $! > save_pid.txt
