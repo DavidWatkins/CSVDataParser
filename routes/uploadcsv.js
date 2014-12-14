@@ -6,6 +6,7 @@ var fastcsv = require("fast-csv");
 var babyparse = require("babyparse");
 require('string.prototype.startswith');
 var fs = require('fs');
+var utf8 = require('utf8');
 
 var addGroupStudy = function(groupstudy, group, study) {
 	groupstudy.update({"study":study, "group":group}, {"study":study, "group":group}, {upsert:true, safe:false}, function(err, data) {
@@ -31,7 +32,7 @@ var checkValid = function(files) {
 };
 
 var startsWithAny = function(string, i) {
-	//console.log("STRING: " + string);
+	string = cleanr(string);
 	if(string.toLowerCase().startsWith("essay")) {
 		return {type:"ESSAY", text: string, index: i};
 	} else if(string.toLowerCase().startsWith("eq")) {
@@ -54,11 +55,11 @@ var insert = function(data, headers, collection, res, groupstudy) {
 	var intervention = "";
 	var position = 5;
 
-	object.ID = data[0];
-	object.Study = data[1];
-	object.Group = data[2];
-	object.Ethnicity = data[3];
-	object.Gender = data[4];
+	object.ID = data[0].trim();
+	object.Study = data[1].trim();
+	object.Group = data[2].trim();
+	object.Ethnicity = data[3].trim();
+	object.Gender = data[4].trim();
 
 	for (position; position < data.length && data[position] != ""; position++) {}
 
@@ -68,23 +69,24 @@ var insert = function(data, headers, collection, res, groupstudy) {
 		if(headers[i].type === "Intervention") {
 			intervention = headers[i].text;
 		} else if(headers[i].index >= position) {
+			data[headers[i].index] = cleanr(data[headers[i].index]);
 			if(data[headers[i].index] == "") {
 
 				if(headers[i].type === "ESSAY" || headers[i].type === "EQ") {
 					if(lastObserved.Essays == null) 
 						lastObserved.Essays = [];
 
-					lastObserved.Essays.push({Intervention: intervention, Body: "", Question: headers[i].text});
+					lastObserved.Essays.push({Intervention: intervention, Body: "", header: headers[i].text, index: headers[i].index});
 				} else if(headers[i].type === "File_path") {
 					if(lastObserved.File_path == null) 
 						lastObserved.File_path = [];
 
-					lastObserved.File_path.push("");
+					lastObserved.File_path.push({header: headers[i].text, file_path:'', index: headers[i].index});
 				} else if(headers[i].type === "Mark") {
 					if(lastObserved.Mark == null) 
 						lastObserved.Mark = [];
 
-					lastObserved.Mark.push("");
+					lastObserved.Mark.push({header: headers[i].text, mark:'', index: headers[i].index});
 				}
 
 			} else {
@@ -104,17 +106,17 @@ var insert = function(data, headers, collection, res, groupstudy) {
 					if(object.Essays == null) 
 						object.Essays = [];
 
-					object.Essays.push({Intervention: intervention, Body: data[headers[i].index], Question: headers[i].text});
+					object.Essays.push({Intervention: intervention, Body: data[headers[i].index], header: headers[i].text, index: headers[i].index});
 				} else if(headers[i].type === "File_path") {
 					if(object.File_path == null) 
 						object.File_path = [];
 
-					object.File_path.push(data[headers[i].index]);
+					object.File_path.push({header: headers[i].text, file_path: data[headers[i].index], index: headers[i].index});
 				} else if(headers[i].type === "Mark") {
 					if(object.Mark == null) 
 						object.Mark = [];
 
-					object.Mark.push(data[headers[i].index]);
+					object.Mark.push({header: headers[i].text, mark: data[headers[i].index], index: headers[i].index});
 				} else if(headers[i].type === "Condition") {
 					object.Condition = data[headers[i].index];
 				} 
@@ -153,7 +155,7 @@ var readFile = function(path, res, req) {
     groupstudy.index('study group');
 
     var headers = [];
-    var lines = babyparse.parse(fs.readFileSync(path, 'utf-8')).data;
+    var lines = babyparse.parse(fs.readFileSync(path, 'ascii')).data;
     for (var i = 1; i < lines.length; i++) {
     	if(i == 1) {
     		var titles = lines[i];
@@ -167,6 +169,13 @@ var readFile = function(path, res, req) {
     	}
     };
     console.log("Inserted " + (lines.length - 1) + " entries into \'subjects\'");
+};
+
+// Change straight quotes to curly and double hyphens to em-dashes.
+function cleanr(a) {
+  a = a.replace(/[\u2018\u2019]/g, "'");
+  a = a.replace(/[\u201C\u201D]/g, '"');
+  return a;
 };
 
 router.get('/:var(upload|uploadcsv|uploadcsv.php)', function(req, res) {

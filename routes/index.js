@@ -48,7 +48,7 @@ router.post('/ajax/table', jsonParser, function(req, res) {
 		query.Group = req.body.group;
 
 	req.mongodb.collection('subjects').find(query).toArray(function(err, docs) {
-		res.send(JSON.stringify(docs));
+		res.send(docs);
 		res.end();
 	});
 });

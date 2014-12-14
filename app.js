@@ -1,16 +1,20 @@
+//Imports for viewing and app
 var express = require('express');
 var app = express();
 var jade = require('jade');
-var path = require('path');
-var mongo = require('mongodb').MongoClient;
-var monk = require('monk');
-var db = monk('localhost:27017/LIRSM');
+var forever = require('forever-monitor');
 
+//Imports for database management
+var mongo = require('mongodb').MongoClient;
+var db = require('monk')('localhost:27017/LIRSM');
+
+//Multiple action forms for file upload
 var multer = require('multer');
 app.use(multer({
 	dest:"./uploads/"
 }));
 
+//Set jade as templating engine
 var bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -36,6 +40,6 @@ app.use(index);
 var uploads = require('./routes/uploadcsv.js');
 app.use(uploads);
 
-
+app.use(express.static(__dirname + '/public'));
 
 app.listen(3000);

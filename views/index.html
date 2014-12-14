@@ -81,11 +81,14 @@ body
 	// Bootstrap Core JavaScript
 	script(src='//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js')
 
+	script(src='../js/BinaryHeap.js')
+	script(src='../js/Utf8ArrayToStr.js')
+
 	script(type='text/javascript').
 		var currentStudy;
 		var currentGroup;
-		var currentTable;
 		var currentHeaders;
+		var currentDataLength;
 
 		function populateGroups(study) {
 			currentStudy = study;
@@ -136,70 +139,113 @@ body
 			}
 		}
 
+		function generateHeaders(data, headers) {
+			var pathHeatMap = {},
+				markHeatMap = {},
+				essayHeatMap = {};
+
+			for(var i in data) {
+				var subject = data[i];
+
+				headers[0].values[i] = subject["ID"];
+				headers[1].values[i] = subject["Study"];
+				headers[2].values[i] = subject["Group"];
+				headers[3].values[i] = subject["Ethnicity"];
+				headers[4].values[i] = subject["Gender"];
+				headers[5].values[i] = subject["Condition"];
+
+				analyzeForContent(subject["File_path"], 'file_path', pathHeatMap, getNormalHeader, data.length, i);
+				analyzeForContent(subject["Mark"], 'mark', markHeatMap, getNormalHeader, data.length, i);
+				analyzeForContent(subject["Essays"], "Body", essayHeatMap, getEssayHeader, data.length, i);
+			}
+
+			handleHeatMap(pathHeatMap, headers);
+			handleHeatMap(markHeatMap, headers);
+			handleHeatMap(essayHeatMap, headers);
+		}
+
+		function handleHeatMap(heatMap, headers) {
+			heap = new BinaryHeap(scoreValue);
+			var maxVal = 0;
+			for (var key in heatMap) {
+			  if (heatMap.hasOwnProperty(key)) {
+			    heap.push(heatMap[key]);
+			    if(heatMap[key].value > maxVal)
+			    	maxVal = heatMap[key].value;
+			  }
+			}
+
+			while(heap.size() > 0) {
+				var value = heap.pop();
+				if(value.value > 0.1 * maxVal)
+					headers.push(value);
+				else
+					console.log(value.header + " has too few values: " + value.value)
+			}
+		}
+
+		function analyzeForContent(object, content_val, heatMap, getHeader, arraySize, indexInArray) {
+			for(var i in object) {
+				var current = object[i];
+
+				if(current[content_val] != null && current[content_val] != "") {
+					var name = (heatMap[current['header']] != null && heatMap[current['header']].index != current['index']) ? current['header'] : current['header'] + current['index'];
+
+					if(heatMap[name] == null) {
+						 var newVal = {value: 1, index: current['index'], header: getHeader(current), values: new Array(arraySize)};
+						 newVal.values[indexInArray] = current[content_val];
+						 heatMap[name] = newVal;
+					}
+					else {
+						heatMap[name].value++;
+						heatMap[name].values[indexInArray] = current[content_val];
+					}
+				}
+			}
+		}
+
+		function cleanr(a) {
+		  a = a.replace(/[\u2018\u2019]/g, "'");
+		  a = a.replace(/[\u201C\u201D]/g, '"');
+		  return a;
+		};
+
+		function getValue(current) {
+			return (current == null) ? "" : cleanr(current);
+		}
+
+		function getNormalHeader(current) {
+			return current['header'];
+		}
+
+		function getEssayHeader(current) {
+			return current['header'] + "(" + current['Intervention'] + ")";
+		}
+
 		function recordData(data) {
-			var headers = ["ID", "Study", "Group", "Ethnicity", "Gender", "Condition"];
-			var table = [];
-			var raw = JSON.parse(JSON.stringify(data));
-			console.log(raw.length);
+			var headers = [{header: "ID", values: new Array(data.length)},
+						   {header: "Study", values: new Array(data.length)},
+						   {header: "Group", values: new Array(data.length)},
+						   {header: "Ethnicity", values: new Array(data.length)},
+						   {header: "Gender", values: new Array(data.length)},
+						   {header: "Condition", values: new Array(data.length)}];
 
-			var index = 0;
-			var first = raw[0];
-			console.log(first);
-			for(var k in first["File_path"]) {
-				headers.push("File Path " + (parseInt(k) + 1));
-			}
-			for(var k in first["Mark"]) {
-				headers.push("Mark " + (parseInt(k) + 1));
-			}
-
-			for(var k in first["Essays"]) {
-				headers.push(first["Essays"][k]["Question"] + " (" + first["Essays"][k]["Intervention"] + ")");
-			}
-
-			index = 0;
-			for(var subject in data) {
-				table[index] = [];
-				table[index].push(data[subject]["ID"]);
-				table[index].push(data[subject]["Study"]);
-				table[index].push(data[subject]["Group"]);
-				table[index].push(data[subject]["Ethnicity"]);
-				table[index].push(data[subject]["Gender"]);
-				table[index].push(data[subject]["Condition"]);
-
-				for(var k in data[subject]["File_path"]) {
-					if(data[subject]["File_path"] != null)
-						table[index].push(data[subject]["File_path"][k]);
-					else
-						table[index].push("");
-				}
-
-				for(var k in data[subject]["Mark"]) {
-					if(data[subject]["Mark"] != null)
-						table[index].push(data[subject]["Mark"][k]);
-					else
-						table[index].push("");
-				}
-
-				for(var k in data[subject]["Essays"]) {
-					table[index].push(data[subject]["Essays"][k]["Body"]);
-				}
-
-				index++;
-			}
+			generateHeaders(data, headers);
 
 			currentHeaders = headers;
-			currentTable = table;
+			currentDataLength = data.length;
 
 			var headString = "<tr>";
 			for(var head in headers)
-				headString += "<td>" + headers[head] + "</td>";
+				headString += "<td>" + headers[head]['header'] + "</td>";
 			$('#tableHeader').html(headString + "</tr>");
 
 			var tableString = "";
-			for(var subject in table) {
+			var headersLength = headers.length;
+			for(var i = 0; i < data.length; i++) {
 				tableString += "<tr>";
-				for(var detail in table[subject]) {
-					tableString += "<td>" + table[subject][detail] + "</td>";
+				for(var headIndex = 0; headIndex < headersLength; headIndex++) {
+					tableString += "<td>" + getValue(headers[headIndex].values[i]) + "</td>";
 				}
 				tableString += "</tr>";
 			}
@@ -211,23 +257,18 @@ body
 			currentHeaders.forEach(function(header, index) {
 
 				if(index < currentHeaders.length - 1)
-						csvContent += header + ",";
+						csvContent += header['header'] + ",";
 				else
-					csvContent += header;
+					csvContent += header['header'];
 			});
 			csvContent += "\n";
 
-			currentTable.forEach(function(subject, index){
-
-				subject.forEach(function(detail, index) {
-					if(index < subject.length - 1)
-						csvContent += detail + ",";
-					else
-						csvContent += detail;
-
-				});	
-				csvContent += "\n";
-			}); 
+			for(var i = 0; i < currentDataLength; i++) {
+				for(var headIndex = 0; headIndex < currentHeaders.length - 1; headIndex++) {
+					csvContent += getValue(currentHeaders[headIndex].values[i]) + ",";
+				}
+				csvContent += getValue(currentHeaders[currentHeaders.length - 1].values[i]) + "\n";
+			}
 
 			var encodedUri = encodeURI(csvContent);
 			var link = document.createElement("a");

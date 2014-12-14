@@ -1,7 +1,9 @@
 {
   "name": "LIRSMDatabase",
-  "description": "First Express app",
-  "version": "0.0.1",
+  "description": "Allows users to parse through data given from a csv",
+  "version": "0.9.8",
+  "main": "app.js",
+  "author":"David Watkins",
   "dependencies": {
     "express": "4.x",
     "multer": "*",
@@ -12,7 +14,10 @@
     "nodemon": "*",
     "string.prototype.startswith":"*",
     "jade":"*",
-    "body-parser":"*"
+    "body-parser":"*",
+    "daemon":"*",
+    "utf8":"*",
+    "forever-monitor":"*"
   },
   "devDependencies": {
     "grunt": "^0.4.5",
