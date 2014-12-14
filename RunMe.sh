@@ -1,4 +1,4 @@
 #!/bin/bash
-npm install
-npm install forever -g
-forever start ./app.js
+sudo npm install
+sudo npm install forever -g
+sudo nohup node app.js &
