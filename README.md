@@ -17,6 +17,8 @@ In order for certain markers to be recognized by the application, the CSV header
  * Each intervention is constantly updated as the most recently defined intervention value. An intervention must be labeled with the tag "INTERVENTION" in order for it to be recognized by similarly placing it at the front of the header. 
  * Grades can also be recognized by placing "MARK" at the beginning of the header where a grade is relevent. 
  * File paths are also recognized by adding "FILE PATH" to the beginning of the header with file path. 
+ * The Headers for the file must be locate on the second row of the spreadsheet. It is assumed that the first five columns will be: ID	Study	Group/Cohort/Wave	Ethnicity by Title or Number (1=Other/Mixed, 2=Asian, 3=African-American, 4=White, 5=Hispanic/Latino, 6=Black/Non-American, 7=Native American, 8=Pacific Islander, 9=Reported Unknown, 10=Middle Eastern)	Gender by Title or Number (0=M, 1=F).
+
 
 ##Running the server
  * First call the script RunMeBeforeStart.sh. It assumes that you have already installed node.js on your system, which can be installed by running the command "sudo apt-get install" on linux, however you are welcome to look up the relevent instructions for your environment

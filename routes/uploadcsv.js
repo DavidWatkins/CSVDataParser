@@ -54,12 +54,16 @@ var insert = function(data, headers, collection, res, groupstudy) {
 	var object = {};
 	var intervention = "";
 	var position = 5;
-
-	object.ID = data[0].trim();
-	object.Study = data[1].trim();
-	object.Group = data[2].trim();
-	object.Ethnicity = data[3].trim();
-	object.Gender = data[4].trim();
+	
+	if(data[0] != null && data[1] != null && data[2] != null && data[3] != null && data[4] != null) {
+		object.ID = data[0].trim();
+		object.Study = data[1].trim();
+		object.Group = data[2].trim();
+		object.Ethnicity = data[3].trim();
+		object.Gender = data[4].trim();
+	} else {
+		return;
+	}
 
 	for (position; position < data.length && data[position] != ""; position++) {}
 
@@ -157,14 +161,14 @@ var readFile = function(path, res, req) {
     var headers = [];
     var lines = babyparse.parse(fs.readFileSync(path, 'ascii')).data;
     for (var i = 1; i < lines.length; i++) {
-    	if(i == 1) {
+    	if(i == 2) {
     		var titles = lines[i];
     		for (var j = 1; j < titles.length; j++) {
     			if(titles[j].toString() != "" && (header = startsWithAny(titles[j].toString(), j)) != null) {
     				headers.push(header);
     			}
     		}
-    	} else {
+    	} else if(i > 2) {
     		insert(lines[i], headers, collection, res, groupstudy);
     	}
     };
