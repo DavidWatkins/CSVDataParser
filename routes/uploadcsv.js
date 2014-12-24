@@ -161,14 +161,14 @@ var readFile = function(path, res, req) {
     var headers = [];
     var lines = babyparse.parse(fs.readFileSync(path, 'ascii')).data;
     for (var i = 1; i < lines.length; i++) {
-    	if(i == 2) {
+    	if(i == 1) {
     		var titles = lines[i];
     		for (var j = 1; j < titles.length; j++) {
     			if(titles[j].toString() != "" && (header = startsWithAny(titles[j].toString(), j)) != null) {
     				headers.push(header);
     			}
     		}
-    	} else if(i > 2) {
+    	} else {
     		insert(lines[i], headers, collection, res, groupstudy);
     	}
     };
