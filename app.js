@@ -42,4 +42,11 @@ app.use(uploads);
 
 app.use(express.static(__dirname + '/public'));
 
+app.get('/drop', function(req, res) {
+    // Set our collection
+    req.db.get('subjects').drop();
+    req.db.get('groupstudy').drop();
+	res.redirect('/uploadcsv');
+});
+
 app.listen(3000);
